@@ -1,17 +1,19 @@
-from app.settings import *
-import math, os, json, csv, argparse
-import pandas as pd
-from collections import defaultdict, Counter
-from textwrap import wrap
+import math, os, json, csv
 import matplotlib # this needs to be added to run on galaxylab
 matplotlib.use('Agg') # this needs to be added to run on galaxylab
-from matplotlib import gridspec
+import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from collections import Counter
+from textwrap import wrap
+
+from app.settings import *
+
+
 class Heatmap(object):
     """
-    This is a program that genreates a heatmap of multiple RGI analyses.
+    This is a program that generates a heatmap of multiple RGI analyses.
     """
 
     def __init__(self, input, classification, frequency, output, cluster, display, debug):
@@ -39,10 +41,12 @@ class Heatmap(object):
         # print(figsize)
         return w,l,fig,figsize
 
-    def create_plot(self,t,r): # t = type plot, r = ratio
-        # ax0 = heatmap, ax1 = categories, ax2 = frequency
-        """Creates the appropriate number of subplots"""
-        if t == 'c': # Category
+    def create_plot(self,t,r):
+        """Creates the appropriate number of subplots
+        t = type plot, r = ratio, ax0 = heatmap,
+        ax1 = categories, ax2 = frequency"""
+        # Category
+        if t == 'c':
             gs = gridspec.GridSpec(1, 2, width_ratios=[1,r])
             ax0 = plt.subplot(gs[1]) # Heatmap
             ax1 = plt.subplot(gs[0], sharey=ax0) # Categories
@@ -53,7 +57,8 @@ class Heatmap(object):
             ax1.spines['left'].set_visible(False)
             ax1.tick_params(bottom=False, left=False)
             return ax0,ax1,gs
-        if t == 'cf': # Category and frequency
+        # Category and frequency
+        if t == 'cf':
             gs = gridspec.GridSpec(2, 2, width_ratios=[1,r], height_ratios=[1,50])
             ax0 = plt.subplot(gs[3])
             ax1 = plt.subplot(gs[2], sharey=ax0)
@@ -71,7 +76,8 @@ class Heatmap(object):
             ax2.set_axisbelow(True)
             plt.grid(axis='y')
             return ax0,ax1,ax2,gs
-        if t == 'f': # Frequency
+        # Frequency
+        if t == 'f':
             gs = gridspec.GridSpec(2, 1, height_ratios=[1,50])
             ax0 = plt.subplot(gs[1])
             ax2 = plt.subplot(gs[0], sharex=ax0)
@@ -96,7 +102,7 @@ class Heatmap(object):
             if len(class_dict[model]) > 1:
                 df = df.append([df.loc[model]]*(len(class_dict[model])-1))
 
-        # Assigns a unique identifier to each entry to index the dataframe without duplicates
+        # Assigns a unique identifier to each entry to index the df without duplicates
         count = Counter(df.index.values)
         new_labels = df.index.tolist() # Add * to the models with duplicates
         new_index = []
@@ -104,15 +110,14 @@ class Heatmap(object):
         for model in list(df.index.values):
             if count[model] > 1:
                 idx = new_labels.index(model)
-                new_labels[idx] = "%s*" % (model)
-
+                new_labels[idx] = "{m}*".format(m=model)
         for i,v in enumerate(list(df.index.values)):
             if v in counted:
                 counted[v] += 1
-                new_index.append(v+"_"+str(counted[v]))
+                new_index.append("{m}_{i}".format(m=v, i=counted[v]))
             else:
                 counted[v] = 0
-                new_index.append(v+"_0")
+                new_index.append("{m}_0".format(m=v))
 
         df.index = new_labels
         df = df.assign(uID=new_index)
@@ -122,21 +127,20 @@ class Heatmap(object):
     def create_frequency_df(self, df, outfile):
         """Creates a dataframe for frequency data"""
         freq_df = pd.DataFrame() # New matrix df based on frequencies
-        freq_dict = {} # Dictionary to keep track of ocurance of resistome profile
-        samples = {} # Dictionary to group samples with identifcal profiles together
+        freq_dict = {} # Dictionary to keep track of occurrence of resistome profile
+        samples = {} # Dictionary to group samples with identical profiles together
         n = 0
         for column in df:
             if column != 'index':
                 n += 1
             s1 = df.loc[:, column] # Store column data as a Series
             if freq_df.empty:
-                freq_df = pd.concat([freq_df, s1], axis = 1, sort=True)
+                freq_df = pd.concat([freq_df, s1], axis=1, sort=True)
                 freq_dict[column] = 1
                 samples[column] = [column]
             else:
                 counter = 0
                 for profile in freq_df:
-                    # print(profile)
                     s2 = df.loc[:, profile]
                     if s1.equals(s2):
                         counter += 1
@@ -152,13 +156,11 @@ class Heatmap(object):
             del samples["index"]
         except:
             pass
-
         # Order columns by frequency of resistome profiles
         cols = sorted(samples.keys(), key=(lambda x: len(samples[x])), reverse=True)
         if self.classification:
             cols.insert(0, 'index')
         freq_df = freq_df[cols]
-
         # Create .txt file of grouped samples
         with open('{o}-{n}-frequency.txt'.format(o=outfile, n=n), 'w') as f:
             fcsv = csv.writer(f, delimiter='\t')
@@ -316,7 +318,7 @@ class Heatmap(object):
             accession = jsonfile.split(".json")[0]
             shortened.append(accession) # Don't take whole file name
             genes[accession] = {}
-            with open(os.path.join(directory, jsonfile)) as data: # Use os.path.join
+            with open(os.path.join(directory, jsonfile)) as data:
                 rgi_data = json.load(data)
             try:
                 del rgi_data["_metadata"]
@@ -328,7 +330,6 @@ class Heatmap(object):
                 # Top hit of each ORF
                 for key,value in rgi_data.items():
                     if isinstance(value, dict):
-                        contig_id = key
                         hsp = max(value.keys(), key=(lambda key: value[key]['bit_score']))
 
                         # Flag to exclude loose hits
@@ -386,8 +387,6 @@ class Heatmap(object):
                                             del drug_class[topmodel]
                                         except:
                                             pass
-                                        # print(jsonfile, hsp)
-                                        # print("NOTE: %s excluded because it is missing complete categorization information." % (topmodel))
 
                             except Exception as e:
                                 print(e)
@@ -404,7 +403,8 @@ class Heatmap(object):
                 pass
 
         for e in excluded:
-            print("NOTE: %s excluded because it is missing complete categorization information." % (e))
+            print("NOTE: {0} excluded because it is missing"
+                  " complete categorization information." .format(e))
 
         genelist = sorted(genelist)
 
@@ -449,29 +449,31 @@ class Heatmap(object):
             # Combine the 3 Series into a dataframe with all classification info
             complete_class_df = pd.concat([class_df1, class_df2, class_df3], axis=1, sort=True)
 
-            # Function if possible
+            # To do: Function if possible
             if self.classification == "drug_class":
                 classification = "Drug Class"
-                complete_class_df= complete_class_df.set_index(["resistance_mechanism", "gene_family"], append=True)["drug_class"].apply(pd.Series).stack()
+                complete_class_df= complete_class_df.set_index(
+                    ["resistance_mechanism", "gene_family"], append=True)["drug_class"].apply(pd.Series).stack()
                 complete_class_df= complete_class_df.reset_index()
                 complete_class_df.columns = ["model_name", "resistance_mechanism", "gene_family", "number", "drug_class"]
                 complete_class_df= complete_class_df.set_index("model_name")
                 complete_class_df= complete_class_df.drop(["number"], axis=1)
             elif self.classification == "resistance_mechanism":
                 classification = "Resistance Mechanism"
-                complete_class_df= complete_class_df.set_index(["drug_class", "gene_family"], append=True)["resistance_mechanism"].apply(pd.Series).stack()
+                complete_class_df= complete_class_df.set_index(
+                    ["drug_class", "gene_family"], append=True)["resistance_mechanism"].apply(pd.Series).stack()
                 complete_class_df= complete_class_df.reset_index()
                 complete_class_df.columns = ["model_name", "drug_class", "gene_family", "number", "resistance_mechanism"]
                 complete_class_df= complete_class_df.set_index("model_name")
                 complete_class_df= complete_class_df.drop(["number"], axis=1)
             elif self.classification == "gene_family":
                 classification = "AMR Gene Family"
-                complete_class_df= complete_class_df.set_index(["drug_class", "resistance_mechanism"], append=True)["gene_family"].apply(pd.Series).stack()
+                complete_class_df= complete_class_df.set_index(
+                    ["drug_class", "resistance_mechanism"], append=True)["gene_family"].apply(pd.Series).stack()
                 complete_class_df= complete_class_df.reset_index()
                 complete_class_df.columns = ["model_name", "drug_class", "resistane_mechanism", "number", "gene_family"]
                 complete_class_df= complete_class_df.set_index("model_name")
                 complete_class_df= complete_class_df.drop(["number"], axis=1)
-
             # Create unique identifiers again for the classifications dataframe
             new_index = []
             counted = {}
