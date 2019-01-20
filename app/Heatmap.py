@@ -5,6 +5,7 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 
+from matplotlib import gridspec
 from collections import Counter
 from textwrap import wrap
 
@@ -32,31 +33,30 @@ class Heatmap(object):
         """Returns Heatmap class full object."""
         return "Heatmap({}".format(self.__dict__)
 
-    def get_figure_dimensions(self,s,g):
-        """Set the dimensions of the figure"""
+    def get_figure_dimensions(self, s, g):
+        """Set the dimensions of the figure."""
         w = len(s)
         l = len(g)
         figsize = (w, l)
-        fig = plt.figure(figsize = figsize)
-        # print(figsize)
-        return w,l,fig,figsize
+        fig = plt.figure(figsize=figsize)
+        return w, l, fig, figsize
 
-    def create_plot(self,t,r):
+    def create_plot(self, t, r):
         """Creates the appropriate number of subplots
         t = type plot, r = ratio, ax0 = heatmap,
         ax1 = categories, ax2 = frequency"""
         # Category
         if t == 'c':
             gs = gridspec.GridSpec(1, 2, width_ratios=[1,r])
-            ax0 = plt.subplot(gs[1]) # Heatmap
-            ax1 = plt.subplot(gs[0], sharey=ax0) # Categories
+            ax0 = plt.subplot(gs[1])  # Heatmap
+            ax1 = plt.subplot(gs[0], sharey=ax0)  # Categories
             ax1.set_xlim([0,1])
             ax1.spines['right'].set_visible(False)
             ax1.spines['top'].set_visible(False)
             ax1.spines['bottom'].set_visible(False)
             ax1.spines['left'].set_visible(False)
             ax1.tick_params(bottom=False, left=False)
-            return ax0,ax1,gs
+            return ax0, ax1, gs
         # Category and frequency
         if t == 'cf':
             gs = gridspec.GridSpec(2, 2, width_ratios=[1,r], height_ratios=[1,50])
@@ -75,7 +75,7 @@ class Heatmap(object):
             plt.setp(ax2.get_xticklabels(), visible=False)
             ax2.set_axisbelow(True)
             plt.grid(axis='y')
-            return ax0,ax1,ax2,gs
+            return ax0, ax1, ax2, gs
         # Frequency
         if t == 'f':
             gs = gridspec.GridSpec(2, 1, height_ratios=[1,50])
@@ -86,7 +86,7 @@ class Heatmap(object):
             ax2.spines['top'].set_visible(False)
             ax2.tick_params(bottom=False)
             plt.setp(ax2.get_xticklabels(), visible=False)
-            return ax0,ax2,gs
+            return ax0, ax2, gs
 
     def create_class_series(self, class_dict, name):
         """Create a pandas series for the classification chosen"""
@@ -104,7 +104,7 @@ class Heatmap(object):
 
         # Assigns a unique identifier to each entry to index the df without duplicates
         count = Counter(df.index.values)
-        new_labels = df.index.tolist() # Add * to the models with duplicates
+        new_labels = df.index.tolist()  # Add * to the models with duplicates
         new_index = []
         counted = {}
         for model in list(df.index.values):
@@ -126,14 +126,14 @@ class Heatmap(object):
 
     def create_frequency_df(self, df, outfile):
         """Creates a dataframe for frequency data"""
-        freq_df = pd.DataFrame() # New matrix df based on frequencies
-        freq_dict = {} # Dictionary to keep track of occurrence of resistome profile
-        samples = {} # Dictionary to group samples with identical profiles together
+        freq_df = pd.DataFrame()  # New matrix df based on frequencies
+        freq_dict = {}  # Dictionary to keep track of occurrence of resistome profile
+        samples = {}  # Dictionary to group samples with identical profiles together
         n = 0
         for column in df:
             if column != 'index':
                 n += 1
-            s1 = df.loc[:, column] # Store column data as a Series
+            s1 = df.loc[:, column]  # Store column data as a Series
             if freq_df.empty:
                 freq_df = pd.concat([freq_df, s1], axis=1, sort=True)
                 freq_dict[column] = 1
@@ -216,13 +216,13 @@ class Heatmap(object):
 
     def draw_categories(self, ax1, ranges, cat_list, ax0, display, df):
         """Draws all elements of categories on axes"""
-        pal = sns.color_palette("dark") # for text
-        light_pal = sns.color_palette("pastel") # for fill
+        pal = sns.color_palette("dark")  # for text
+        light_pal = sns.color_palette("pastel")  # for fill
         label_bb = ax0.yaxis.get_ticklabels()[0].get_window_extent() # get height of labels
 
         # Get longest gene name to determine width of marker fill
-        longest_gene = max(df.index.tolist(), key=len) # string
-        i = df.index.tolist().index(longest_gene) # index
+        longest_gene = max(df.index.tolist(), key=len)  # string
+        i = df.index.tolist().index(longest_gene)  # index
         fill_width = ax0.yaxis.get_ticklabels()[i].get_window_extent().width
 
         # Draw first category first
@@ -235,9 +235,7 @@ class Heatmap(object):
             for line in ax0.yaxis.get_ticklines()[0:ranges[0]*2]:
                 line.set_color(light_pal[3])
                 line.set_markersize(fill_width)
-                # print(label_bb.height)
                 line.set_markeredgewidth(label_bb.height-(label_bb.height*0.25))
-                # print(label_bb.height-(label_bb.height*0.05))
         elif display == "text":
             for label in ax0.yaxis.get_ticklabels()[0:ranges[0]]:
                 label.set_color(pal[3])
@@ -245,9 +243,9 @@ class Heatmap(object):
 
         # Automate drawing of the rest of the categories
         c_iter = 0
-        for x in ranges[1:]: #skips first item
+        for x in ranges[1:]:  #skips first item
             i += 1
-            if c_iter > 3: # Reset iterator to cycle through 4 colours
+            if c_iter > 3:  # Reset iterator to cycle through 4 colours
                 c_iter = 0
             ymax = int(math.fsum(ranges[0:i]) + x)
             ymin = int(math.fsum(ranges[0:i]))
@@ -255,9 +253,11 @@ class Heatmap(object):
             if cat_list[i].count('\n') > 1:
                 temp_str = " ".join(cat_list[i].split('\n'))
                 new_str = '\n'.join(wrap(temp_str,60))
-                ax1.text(0.5, (ymin + (ymax - ymin)/2), new_str, fontsize='large', horizontalalignment="center", color=pal[c_iter], weight="bold")
+                ax1.text(0.5, (ymin + (ymax - ymin)/2), new_str,
+                         fontsize='large', horizontalalignment="center", color=pal[c_iter], weight="bold")
             else:
-                ax1.text(0.5, (ymin + (ymax - ymin)/2), cat_list[i], fontsize='xx-large', horizontalalignment="center", color=pal[c_iter], weight="bold")
+                ax1.text(0.5, (ymin + (ymax - ymin)/2), cat_list[i],
+                         fontsize='xx-large', horizontalalignment="center", color=pal[c_iter], weight="bold")
 
             if display == "fill":
                 for line in ax0.yaxis.get_ticklines()[ymin*2:ymax*2]:
@@ -287,15 +287,15 @@ class Heatmap(object):
         # Moves classification column to the front
         col_list = merged_df.columns.tolist()
         if self.classification in col_list:
-            reordered_columns = [self.classification] + [v for i,v in enumerate(col_list) if i != col_list.index(self.classification)]
+            reordered_columns = [self.classification] + \
+                                [v for i,v in enumerate(col_list) if i != col_list.index(self.classification)]
         else:
-            logger.warning("Couldn't create csv of heatmap matrix. " +
-            "The category {} did not exist.".format(self.classification))
+            logger.warning("Couldn't create csv of heatmap matrix. "
+                           "The category {} did not exist.".format(self.classification))
         merged_df = merged_df[reordered_columns]
         merged_df.to_csv('{}.csv'.format(output), index=False)
 
     def run(self):
-        # print args
         logger.info(json.dumps(self.__dict__, indent=2))
 
         # List to hold the file name
@@ -305,18 +305,18 @@ class Heatmap(object):
         shortened = []
         for thing in files:
             file_path = os.path.join(directory, thing)
-            if thing.endswith(".json") and os.path.isfile(file_path): # Check if it's a file
+            if thing.endswith(".json") and os.path.isfile(file_path):  # Check if it's a file
                 jsons.append(thing)
-        genelist = [] # List of unique genes
-        genes = {} # Will become the dataframe
-        resist_mech = {} # key: gene, value: resistance mechanism
-        drug_class = {} # key: gene, value: drug class
-        gene_family = {} # key: gene, value: gene family
-        excluded = [] # incompletely curated models
+        genelist = []  # List of unique genes
+        genes = {}  # Will become the dataframe
+        resist_mech = {}  # key: gene, value: resistance mechanism
+        drug_class = {}  # key: gene, value: drug class
+        gene_family = {}  # key: gene, value: gene family
+        excluded = []  # incompletely curated models
         for jsonfile in jsons:
             # {json file: {Model: type_hit}}
             accession = jsonfile.split(".json")[0]
-            shortened.append(accession) # Don't take whole file name
+            shortened.append(accession)  # Don't take whole file name
             genes[accession] = {}
             with open(os.path.join(directory, jsonfile)) as data:
                 rgi_data = json.load(data)
@@ -328,7 +328,7 @@ class Heatmap(object):
             try:
                 tophits = {}
                 # Top hit of each ORF
-                for key,value in rgi_data.items():
+                for key, value in rgi_data.items():
                     if isinstance(value, dict):
                         hsp = max(value.keys(), key=(lambda key: value[key]['bit_score']))
 
@@ -403,8 +403,8 @@ class Heatmap(object):
                 pass
 
         for e in excluded:
-            print("NOTE: {0} excluded because it is missing"
-                  " complete categorization information." .format(e))
+            print("NOTE: {0} excluded because it is missing "
+                  "complete categorization information." .format(e))
 
         genelist = sorted(genelist)
 
@@ -422,7 +422,7 @@ class Heatmap(object):
         # Create dataframe from genes dictionary
         if not genes:
             logger.error("Error: No data recovered from JSONs, cannot build heatmap. "
-            "Please check you are using RGI results from ver 4.0.0 or greater.")
+                         "Please check you are using RGI results from ver 4.0.0 or greater.")
             exit()
         df = pd.DataFrame.from_dict(genes)
 
@@ -471,13 +471,13 @@ class Heatmap(object):
                 complete_class_df= complete_class_df.set_index(
                     ["drug_class", "resistance_mechanism"], append=True)["gene_family"].apply(pd.Series).stack()
                 complete_class_df= complete_class_df.reset_index()
-                complete_class_df.columns = ["model_name", "drug_class", "resistane_mechanism", "number", "gene_family"]
+                complete_class_df.columns = ["model_name", "drug_class", "resistance_mechanism", "number", "gene_family"]
                 complete_class_df= complete_class_df.set_index("model_name")
                 complete_class_df= complete_class_df.drop(["number"], axis=1)
             # Create unique identifiers again for the classifications dataframe
             new_index = []
             counted = {}
-            for i,v in enumerate(list(complete_class_df.index.values)):
+            for i, v in enumerate(list(complete_class_df.index.values)):
                 if v in counted:
                     counted[v] += 1
                     new_index.append(v+"_"+str(counted[v]))
@@ -513,54 +513,53 @@ class Heatmap(object):
                     unique_id_values = df_for_merging.index.values
                     df_for_merging = df_for_merging.set_index("index")
                     df_for_merging = df_for_merging.iloc[:,clustered_col]
-                    test_df = df_for_merging.assign(TEMP_COLUMN = unique_id_values)
+                    test_df = df_for_merging.assign(TEMP_COLUMN=unique_id_values)
                     test_df = test_df.reset_index().set_index("TEMP_COLUMN")
                     file_name = '{}-{}'.format(self.output, str(len(jsons)))
                     self.write_csv(self.classification, test_df, s, file_name)
                     column_order = list(df)
                 elif self.cluster == "both" or self.cluster == "genes":
-                    logger.error("Error: Unable to cluster genes because the categorization option was chosen. No heatmap will be generated. Closing program now.")
+                    logger.error("Error: Unable to cluster genes because the categorization option was chosen. "
+                                 "No heatmap will be generated. Closing program now.")
                     exit()
 
                 # Set the figure size
-                fig_width,fig_length,fig,figsize = self.get_figure_dimensions(jsons, unique_ids)
+                fig_width, fig_length, fig, figsize = self.get_figure_dimensions(jsons, unique_ids)
 
                 # Try to draw plot with default sizing
-                ax0,ax1,ax2,gs = self.create_plot('cf', 4)
+                ax0, ax1, ax2, gs = self.create_plot('cf', 4)
 
                 # Adjust the dimensions
                 while True:
-                    if self.get_axis_size(fig,ax0)[1] > 150:
+                    if self.get_axis_size(fig, ax0)[1] > 150:
                         fig_length = fig_length/2
                         figsize = (fig_width, fig_length)
-                        desired_width = (self.get_axis_size(fig,ax0)[1])/3
+                        desired_width = (self.get_axis_size(fig, ax0)[1])/3
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,ax2,gs = self.create_plot('cf', 4)
-                    if self.get_axis_size(fig,ax0)[0] < (self.get_axis_size(fig,ax0)[1])/3:
-                        # print('LESS THAN 1/3')
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, ax2, gs = self.create_plot('cf', 4)
+                    if self.get_axis_size(fig , ax0)[0] < (self.get_axis_size(fig , ax0)[1])/3:
                         fig_length = fig_length/2
                         figsize = (fig_width, fig_length)
-                        desired_width = (self.get_axis_size(fig,ax0)[1])/3
+                        desired_width = (self.get_axis_size(fig , ax0)[1])/3
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,gs = self.create_plot('c', 4)
-                    if self.get_axis_size(fig,ax0)[0] < 10:
-                        # print('BASE AXIS TOO SMALL')
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, gs = self.create_plot('c', 4)
+                    if self.get_axis_size(fig , ax0)[0] < 10:
                         try:
                             desired_width = desired_width*2
                         except:
                             desired_width = fig_width
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,gs = self.create_plot('c', 4)
-                    if self.get_axis_size(fig,ax0)[1] < 150:
-                        if self.get_axis_size(fig,ax0)[0] > (self.get_axis_size(fig,ax0)[1])/3:
-                            if self.get_axis_size(fig,ax0)[0] > 10:
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, gs = self.create_plot('c', 4)
+                    if self.get_axis_size(fig, ax0)[1] < 150:
+                        if self.get_axis_size(fig, ax0)[0] > (self.get_axis_size(fig,ax0)[1])/3:
+                            if self.get_axis_size(fig, ax0)[0] > 10:
                                 break
 
                 # Calculate correct categories dimensions to use
-                ratio_to_use = (self.get_axis_size(fig,ax0)[0])/8
+                ratio_to_use = (self.get_axis_size(fig, ax0)[0])/8
 
                 if figsize[1] > 100:
                     sns.set(font_scale=1.7)
@@ -568,10 +567,10 @@ class Heatmap(object):
                     sns.set(font_scale=1.0)
                 sns.set_style("white")
 
-                ax0,ax1,ax2,gs = self.create_plot('cf', ratio_to_use)
+                ax0, ax1, ax2, gs = self.create_plot('cf', ratio_to_use)
 
                 # Create the heatmap
-                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm) #linewidth=0.5
+                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm)  #linewidth=0.5
                 plt.setp(g.yaxis.get_ticklabels(), rotation=0, fontsize='xx-large')
                 plt.setp(g.xaxis.get_ticklabels(), visible=False)
                 g.tick_params(bottom=False)
@@ -595,21 +594,21 @@ class Heatmap(object):
                 print("Rendering PNG")
                 plt.savefig(file_name + '.png', bbox_inches="tight", format="png", pad_inches=0.5)
                 if self.cluster == "samples":
-                    print('Output file {fn}: AMR genes categorised by {c} and only unique '
-                    'resistome profiles are displayed with ther frequency and have been '
-                    'clustered hierarchically (see SciPy documentation). Yellow '
-                    'represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit. Genes with asterisks (*) appear multiple times '
-                    'because they belong to more than one {c} category in the '
-                    'antibiotic resistance ontology (ARO).'.format(fn=file_name, c=classification))
+                    print('Output file {fn}: AMR genes categorised by {c} and only '
+                          'unique resistome profiles are displayed with ther frequency '
+                          'and have been clustered hierarchically (see SciPy documentation). '
+                          'Yellow represents a perfect hit, teal represents a strict hit, '
+                          'purple represents no hit. Genes with asterisks (*) appear multiple '
+                          'times because they belong to more than one {c} category in the '
+                          'antibiotic resistance ontology (ARO).'.format(fn=file_name, c=self.classification))
                 else:
                     print('Output file {fn}: AMR genes categorised by {c} and '
-                    'only unique resistome profiles are displayed with ther '
-                    'frequency. Yellow represents a perfect hit, teal represents '
-                    'a strict hit, purple represents no hit. Genes with asterisks '
-                    '(*) appear multiple times because they belong to more than '
-                    'one {c} category in the antibiotic resistance ontology (ARO).'
-                    .format(fn=file_name, c=classification))
+                          'only unique resistome profiles are displayed with ther '
+                          'frequency. Yellow represents a perfect hit, teal represents '
+                          'a strict hit, purple represents no hit. Genes with asterisks '
+                          '(*) appear multiple times because they belong to more than '
+                          'one {c} category in the antibiotic resistance ontology (ARO).'
+                          .format(fn=file_name, c=self.classification))
 
             # Categories, but no frequency
             else:
@@ -621,7 +620,8 @@ class Heatmap(object):
                     df = df.iloc[:, clustered_col]
                     df = df.reset_index().set_index("uID")
                 elif self.cluster == "both" or self.cluster == "genes":
-                    logger.error("Error: Unable to cluster genes because the categorization option was chosen. No heatmap will be generated. Closing program now.")
+                    logger.error("Error: Unable to cluster genes because the categorization option"
+                                 " was chosen. No heatmap will be generated. Closing program now.")
                     exit()
 
                 # Write csv before removing unique IDs
@@ -630,39 +630,38 @@ class Heatmap(object):
                 df = df.set_index("index")
 
                 # Set the dimension parameters
-                fig_width,fig_length,fig,figsize = self.get_figure_dimensions(jsons, unique_ids)
+                fig_width, fig_length, fig, figsize = self.get_figure_dimensions(jsons, unique_ids)
 
                 # Try to draw plot with default sizing
-                ax0,ax1,gs = self.create_plot('c', 4)
+                ax0, ax1, gs = self.create_plot('c', 4)
 
                 # Adjust the dimensions
                 while True:
-                    if self.get_axis_size(fig,ax0)[1] > 150:
+                    if self.get_axis_size(fig, ax0)[1] > 150:
                         fig_length = fig_length/2
                         figsize = (fig_width, fig_length)
-                        desired_width = (self.get_axis_size(fig,ax0)[1])/3
+                        desired_width = (self.get_axis_size(fig, ax0)[1])/3
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,gs = self.create_plot('c', 4)
-                    if self.get_axis_size(fig,ax0)[0] < (self.get_axis_size(fig,ax0)[1])/3:
-                        # print('LESS THAN 1/3')
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, gs = self.create_plot('c', 4)
+                    if self.get_axis_size(fig,ax0)[0] < (self.get_axis_size(fig, ax0)[1])/3:
                         fig_length = fig_length/2
                         figsize = (fig_width, fig_length)
-                        desired_width = (self.get_axis_size(fig,ax0)[1])/3
+                        desired_width = (self.get_axis_size(fig, ax0)[1])/3
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,gs = self.create_plot('c', 4)
-                    if self.get_axis_size(fig,ax0)[0] < 10:
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, gs = self.create_plot('c', 4)
+                    if self.get_axis_size(fig, ax0)[0] < 10:
                         try:
                             desired_width = desired_width*2
                         except:
                             desired_width = fig_width
                         figsize = (desired_width, fig_length)
-                        fig = plt.figure(figsize = figsize)
-                        ax0,ax1,gs = self.create_plot('c', 4)
-                    if self.get_axis_size(fig,ax0)[1] < 150:
-                        if self.get_axis_size(fig,ax0)[0] > (self.get_axis_size(fig,ax0)[1])/3:
-                            if self.get_axis_size(fig,ax0)[0] > 10:
+                        fig = plt.figure(figsize=figsize)
+                        ax0, ax1, gs = self.create_plot('c', 4)
+                    if self.get_axis_size(fig, ax0)[1] < 150:
+                        if self.get_axis_size(fig, ax0)[0] > (self.get_axis_size(fig, ax0)[1])/3:
+                            if self.get_axis_size(fig, ax0)[0] > 10:
                                 break
 
                 # Calculate correct categories dimensions to use
@@ -675,10 +674,10 @@ class Heatmap(object):
                 elif df.shape[0] > 200:
                     sns.set(font_scale=1.0)
                 sns.set_style("white")
-                ax0,ax1,gs = self.create_plot('c', ratio_to_use)
+                ax0, ax1, gs = self.create_plot('c', ratio_to_use)
 
                 # Create the heatmap
-                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm) #linewidth=0.5
+                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm)  #linewidth=0.5
                 plt.setp(g.yaxis.get_ticklabels(), rotation=0, fontsize='xx-large')
                 plt.setp(g.xaxis.get_ticklabels(), rotation=90, fontsize='xx-large')
                 plt.setp(ax1.get_yticklabels(), visible=False)
@@ -698,23 +697,23 @@ class Heatmap(object):
                 plt.savefig(file_name + '.png', bbox_inches="tight", format="png", pad_inches=0.5)
                 if self.cluster == "samples":
                     print('Output file {n}: AMR genes categorised by {c} and '
-                    'samples have been clustered hierarchically (see SciPy '
-                    'documentation). Yellow represents a perfect hit, teal '
-                    'represents a strict hit, purple represents no hit. Genes '
-                    'with asterisks (*) appear multiple times because they belong '
-                    'to more than one {c} category in the antibiotic resistance '
-                    'ontology (ARO).'.format(n=file_name, c=classification))
+                          'samples have been clustered hierarchically (see SciPy '
+                          'documentation). Yellow represents a perfect hit, teal '
+                          'represents a strict hit, purple represents no hit. Genes '
+                          'with asterisks (*) appear multiple times because they belong '
+                          'to more than one {c} category in the antibiotic resistance '
+                          'ontology (ARO).'.format(n=file_name, c=self.classification))
                 else:
-                    print('Output file %s: AMR genes categorised by %s. Yellow '
-                    'represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit. Genes with asterisks (*) appear multiple times '
-                    'because they belong to more than one %s category in the '
-                    'antibiotic resistance ontology (ARO).' %(file_name, classification, classification))
+                    print('Output file {n}: AMR genes categorised by {c}. Yellow '
+                          'represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit. Genes with asterisks (*) appear multiple times '
+                          'because they belong to more than one {c} category in the '
+                          'antibiotic resistance ontology (ARO).'.format(n=file_name, c=self.classification))
 
         # No categories
         else:
             if self.frequency:
-                df,freq_dict = self.create_frequency_df(df, self.output)
+                df, freq_dict = self.create_frequency_df(df, self.output)
                 column_order = list(df)
 
                 if self.cluster:
@@ -727,7 +726,7 @@ class Heatmap(object):
                 df.to_csv('{}.csv'.format(file_name))
 
                 # Set the dimension parameters
-                fig_width,fig_length,fig,figsize = self.get_figure_dimensions(jsons, genelist)
+                fig_width, fig_length, fig, figsize = self.get_figure_dimensions(jsons, genelist)
 
                 # Try to draw plot with default sizing
                 if figsize[1] > 100:
@@ -735,10 +734,10 @@ class Heatmap(object):
                 # if df.shape[0] > 200:
                 #     sns.set(font_scale=1.0)
                 sns.set_style("white")
-                ax0,ax2,gs = self.create_plot('f', 0)
+                ax0, ax2, gs = self.create_plot('f', 0)
 
                 # Create the heatmap
-                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm) #linewidth=0.5
+                g = sns.heatmap(df, cmap=custom_cmap, cbar=False, ax=ax0, norm=norm)  #linewidth=0.5
                 plt.setp(g.yaxis.get_ticklabels(), rotation=0, fontsize='xx-large')
                 plt.setp(g.xaxis.get_ticklabels(), visible=False)
                 g.tick_params(bottom=False)
@@ -782,7 +781,7 @@ class Heatmap(object):
                     g.set_xlabel(" ")
 
                     # Draw barplot
-                    self.draw_barplot(freq_dict,ax2, column_order)
+                    self.draw_barplot(freq_dict, ax2, column_order)
                     gs.tight_layout(fig)
 
                 print("Rendering EPS")
@@ -790,26 +789,26 @@ class Heatmap(object):
                 print("Rendering PNG")
                 plt.savefig(file_name + '.png', bbox_inches="tight", pad_inches=0.5, format="png")
                 if self.cluster == 'samples':
-                    print('Output file %s: AMR genes are listed in alphabetical order and unique '
-                    'resistome profiles are displayed with their frequency have been '
-                    'clustered hierarchically (see SciPy documentation). Yellow '
-                    'represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes are listed in alphabetical order and unique '
+                          'resistome profiles are displayed with their frequency have been '
+                          'clustered hierarchically (see SciPy documentation). Yellow '
+                          'represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 elif self.cluster == 'genes':
-                    print('Output file %s: AMR genes have been clustered hierarchically '
-                    '(see SciPy documentation) and unique resistome profiles are '
-                    'displayed with ther frequency. Yellow represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes have been clustered hierarchically '
+                          '(see SciPy documentation) and unique resistome profiles are '
+                          'displayed with ther frequency. Yellow represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 elif self.cluster == 'both':
-                    print('Output file %s: AMR genes and unique resistome profiles '
-                    'displayed with ther frequency have been clustered hierarchically '
-                    '(see SciPy documentation). Yellow represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes and unique resistome profiles '
+                          'displayed with ther frequency have been clustered hierarchically '
+                          '(see SciPy documentation). Yellow represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 else:
                     print('Output file %s: AMR genes are listed in alphabetical order and unique '
-                    'resistome profiles are displayed with their frequency. Yellow '
-                    'represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                          'resistome profiles are displayed with their frequency. Yellow '
+                          'represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
 
             else:
                 # No categories or frequency
@@ -829,7 +828,7 @@ class Heatmap(object):
                     sns.set(font_scale=1.7)
                 if fig_width > 200 and fig_length > 200:
                     figsize = (fig_width/2, fig_length/2)
-                    fig = plt.figure(figsize = figsize)
+                    fig = plt.figure(figsize=figsize)
                     sns.set(font_scale=1.2)
 
                 sns.set_style("white")
@@ -847,18 +846,18 @@ class Heatmap(object):
                 print("Rendering PNG")
                 plt.savefig(file_name + '.png', bbox_inches="tight", format="png", pad_inches=0.5)
                 if self.cluster == 'samples':
-                    print('Output file %s: AMR genes are listed in alphabetical order '
-                    'and samples have been clustered hierarchically (see SciPy documentation). '
-                    'Yellow represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes are listed in alphabetical order '
+                          'and samples have been clustered hierarchically (see SciPy documentation). '
+                          'Yellow represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 elif self.cluster == 'genes':
-                    print('Output file %s: AMR genes have been clustered hierarchically. '
-                    'Yellow represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes have been clustered hierarchically. '
+                          'Yellow represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 elif self.cluster == 'both':
-                    print('Output file %s: AMR genes and samples have been clustered hierarchically '
-                    '(see SciPy documentation). Yellow represents a perfect hit, teal represents a strict hit, purple '
-                    'represents no hit.' %(file_name))
+                    print('Output file {n}: AMR genes and samples have been clustered hierarchically '
+                          '(see SciPy documentation). Yellow represents a perfect hit, teal represents a strict hit, purple '
+                          'represents no hit.'.format(n=file_name))
                 else:
-                    print('Output file %s: Yellow represents a perfect hit, '
-                    'teal represents a strict hit, purple represents no hit.' %(file_name))
+                    print('Output file {n}: Yellow represents a perfect hit, '
+                          'teal represents a strict hit, purple represents no hit.'.format(n=file_name))
